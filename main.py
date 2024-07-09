@@ -8,8 +8,9 @@ from omegaconf import DictConfig
 import wandb
 from termcolor import cprint
 from tqdm import tqdm
+from torchvision import transforms
 
-from src.datasets import ThingsMEGDataset
+from src.datasets import ThingsMEGDataset, gcn, ZCAWhitening
 from src.models import BasicConvClassifier
 from src.utils import set_seed
 
@@ -26,12 +27,17 @@ def run(args: DictConfig):
     #    Dataloader
     # ------------------
     loader_args = {"batch_size": args.batch_size, "num_workers": args.num_workers}
-    
+
+    transform = transforms.Compose([transforms.ToTensor(), gcn(), ZCAWhitening()])
+
     train_set = ThingsMEGDataset("train", args.data_dir)
+    train_set.transform = transform
     train_loader = torch.utils.data.DataLoader(train_set, shuffle=True, **loader_args)
     val_set = ThingsMEGDataset("val", args.data_dir)
+    val_set.transform = transform
     val_loader = torch.utils.data.DataLoader(val_set, shuffle=False, **loader_args)
     test_set = ThingsMEGDataset("test", args.data_dir)
+    test_set.transform = transform
     test_loader = torch.utils.data.DataLoader(
         test_set, shuffle=False, batch_size=args.batch_size, num_workers=args.num_workers
     )
